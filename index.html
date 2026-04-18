@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoVisor Ocaña — UFPSO 2026</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --verde: #1a5c38; --verde-dark: #134429;
+      --verde-light: #eaf5ef; --accent: #f0a500;
+      --top-h: 58px; --sidebar-w: 260px; --info-w: 240px;
+    }
+    html, body { height: 100%; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; background: #f4f6f8; }
+    #app { display: flex; flex-direction: column; height: 100vh; }
+
+    .topbar { height: var(--top-h); background: var(--verde); display: flex; align-items: center; gap: 16px; padding: 0 20px; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.25); z-index: 1000; }
+    .topbar-brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .brand-logo { width: 40px; height: 40px; background: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: var(--verde); }
+    .brand-name { display: block; color: white; font-size: 16px; font-weight: 700; }
+    .brand-sub  { display: block; color: rgba(255,255,255,0.65); font-size: 10.5px; }
+    .topbar-search { flex: 1; display: flex; gap: 8px; max-width: 520px; }
+    .search-wrapper { flex: 1; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; padding: 0 12px; display: flex; align-items: center; }
+    .search-wrapper input { width: 100%; background: none; border: none; outline: none; color: white; font-size: 13px; padding: 8px 0; }
+    .search-wrapper input::placeholder { color: rgba(255,255,255,0.55); }
+    #search-btn { padding: 0 18px; height: 36px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    #search-btn:hover { background: #d4920a; }
+    .meta-badge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: white; font-size: 11px; padding: 4px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    .sidebar { width: var(--sidebar-w); background: white; border-right: 1px solid #e0e5ea; overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+    .sidebar-section { padding: 16px; border-bottom: 1px solid #eef0f3; }
+    .section-header { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--verde); margin-bottom: 12px; }
+    .section-hint { font-size: 11px; color: #999; margin-bottom: 10px; }
+    .radio-group { display: flex; flex-direction: column; gap: 6px; }
+    .radio-card { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1.5px solid #e0e5ea; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+    .radio-card input { accent-color: var(--verde); margin: 0; }
+    .radio-card:hover, .radio-card.active { border-color: var(--verde); background: var(--verde-light); }
+    .radio-name { display: block; font-size: 13px; font-weight: 500; }
+    .radio-desc { display: block; font-size: 11px; color: #999; }
+    .layer-list { display: flex; flex-direction: column; gap: 5px; }
+    .layer-card { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1.5px solid #eef0f3; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+    .layer-card input { display: none; }
+    .layer-card:hover { border-color: #ccc; background: #f9f9fb; }
+    .layer-card.on { border-color: #aaa; background: #f6fbf8; }
+    .layer-color { width: 10px; height: 32px; border-radius: 4px; flex-shrink: 0; }
+    .layer-info { flex: 1; }
+    .layer-name { display: block; font-size: 12.5px; font-weight: 600; }
+    .layer-src  { display: block; font-size: 10.5px; color: #aaa; }
+    .layer-toggle { font-size: 16px; color: #bbb; }
+    .layer-card.on .layer-toggle { color: var(--verde); }
+    .credits { margin-top: auto; }
+    .credits p { font-size: 10.5px; color: #bbb; line-height: 1.8; }
+
+    .map-container { flex: 1; position: relative; overflow: hidden; }
+    #map { width: 100%; height: 100%; }
+    .map-legend { position: absolute; bottom: 28px; left: 14px; background: rgba(255,255,255,0.96); border: 1px solid #dde2e8; border-radius: 10px; padding: 12px 14px; z-index: 500; font-size: 12px; min-width: 170px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .legend-title { font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--verde); margin-bottom: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; color: #444; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .coords-bar { position: absolute; bottom: 6px; right: 10px; background: rgba(255,255,255,0.92); border: 1px solid #dde2e8; border-radius: 6px; padding: 4px 10px; font-size: 11px; color: #555; z-index: 500; }
+
+    .infopanel { width: var(--info-w); background: white; border-left: 1px solid #e0e5ea; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; }
+    .infopanel-header { padding: 14px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--verde); border-bottom: 1px solid #eef0f3; }
+    #info-content { padding: 14px 16px; flex: 1; }
+    .info-placeholder { text-align: center; padding: 20px 0; }
+    .placeholder-icon { font-size: 32px; margin-bottom: 10px; opacity: 0.4; }
+    .info-placeholder p { font-size: 12px; color: #999; line-height: 1.6; }
+    .info-row { margin-bottom: 10px; }
+    .info-label { display: block; font-size: 10px; text-transform: uppercase; color: #aaa; margin-bottom: 2px; }
+    .info-value { display: block; font-size: 13px; font-weight: 500; color: #222; }
+    .infopanel-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 16px; border-top: 1px solid #eef0f3; }
+    .stat-card { background: var(--verde-light); border-radius: 8px; padding: 10px; text-align: center; }
+    .stat-num { display: block; font-size: 22px; font-weight: 700; color: var(--verde); }
+    .stat-label { display: block; font-size: 10px; color: #666; margin-top: 2px; }
+    .quick-links { padding: 14px 16px; border-top: 1px solid #eef0f3; }
+    .ql-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #aaa; margin-bottom: 8px; }
+    .ql-btn { display: block; width: 100%; text-align: left; padding: 8px 10px; margin-bottom: 5px; border: 1.5px solid #eef0f3; border-radius: 8px; background: white; font-size: 12px; color: #333; cursor: pointer; transition: all 0.15s; }
+    .ql-btn:hover { border-color: var(--verde); background: var(--verde-light); color: var(--verde); }
+
+    .fab { position: fixed; bottom: 24px; right: 24px; width: 52px; height: 52px; border-radius: 50%; background: var(--verde); color: white; border: none; font-size: 22px; cursor: pointer; box-shadow: 0 4px 16px rgba(26,92,56,0.4); z-index: 2000; }
+    .fab:hover { background: var(--verde-dark); }
+    .chatbot { position: fixed; bottom: 84px; right: 24px; width: 330px; max-height: 460px; background: white; border-radius: 14px; border: 1px solid #e0e5ea; box-shadow: 0 8px 32px rgba(0,0,0,0.15); display: none; flex-direction: column; z-index: 2000; overflow: hidden; }
+    .chatbot.open { display: flex; }
+    .chat-topbar { background: var(--verde); padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+    .chat-avatar { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.2); color: white; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+    .chat-name { display: block; color: white; font-size: 14px; font-weight: 600; }
+    .chat-status { display: block; color: rgba(255,255,255,0.7); font-size: 11px; }
+    .chat-meta { flex: 1; }
+    .chat-close { background: none; border: none; color: rgba(255,255,255,0.8); font-size: 18px; cursor: pointer; }
+    .chat-body { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .chat-bubble { padding: 10px 13px; border-radius: 12px; font-size: 13px; line-height: 1.5; max-width: 88%; }
+    .chat-bubble.bot { background: var(--verde-light); color: #1a3d28; align-self: flex-start; border-bottom-left-radius: 3px; }
+    .chat-bubble.user { background: var(--verde); color: white; align-self: flex-end; border-bottom-right-radius: 3px; }
+    .chat-suggestions { display: flex; flex-direction: column; gap: 5px; }
+    .suggestion { background: white; border: 1.5px solid #d5e8db; border-radius: 8px; padding: 7px 10px; font-size: 12px; color: var(--verde); cursor: pointer; text-align: left; }
+    .suggestion:hover { background: var(--verde-light); }
+    .chat-footer { padding: 10px 12px; border-top: 1px solid #eef0f3; display: flex; gap: 8px; }
+    #chat-input { flex: 1; padding: 9px 12px; border: 1.5px solid #dde2e8; border-radius: 8px; font-size: 13px; outline: none; }
+    #chat-input:focus { border-color: var(--verde); }
+    #chat-send { width: 36px; height: 36px; background: var(--verde); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 3000; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 14px; width: 620px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.2); }
+    .modal-header { padding: 16px 20px; background: var(--verde); color: white; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
+    .modal-header button { background: none; border: none; color: white; font-size: 18px; cursor: pointer; }
+    .modal-body { overflow-y: auto; padding: 20px; }
+    .glosario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .glosario-term { background: var(--verde-light); border-radius: 10px; padding: 12px; border-left: 4px solid var(--verde); }
+    .term-word { font-weight: 700; font-size: 13px; color: var(--verde); margin-bottom: 4px; }
+    .term-def  { font-size: 12px; color: #444; line-height: 1.5; }
+
+    .leaflet-popup-content-wrapper { border-radius: 10px !important; font-family: 'Segoe UI', sans-serif; }
+    .popup-title { font-weight: 700; color: var(--verde); margin-bottom: 6px; font-size: 14px; }
+    .popup-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+    .badge-alto  { background: #fde8e8; color: #c0392b; }
+    .badge-medio { background: #fef3e2; color: #d68910; }
+    .badge-jac   { background: #f0e8fa; color: #7d3c98; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-logo">UF</div>
+      <div class="brand-text">
+        <span class="brand-name">GeoVisor Ocaña</span>
+        <span class="brand-sub">Visor Geográfico Interactivo · UFPSO 2026</span>
+      </div>
+    </div>
+    <div class="topbar-search">
+      <div class="search-wrapper">
+        <input type="text" id="search-input" placeholder="Buscar barrio o dirección en Ocaña..." />
+      </div>
+      <button id="search-btn">Buscar</button>
+    </div>
+    <span class="meta-badge">Norte de Santander</span>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="section-header">🗺️ Mapa base</div>
+        <div class="radio-group">
+          <label class="radio-card active" id="label-osm">
+            <input type="radio" name="basemap" value="osm" checked />
+            <div><span class="radio-name">OpenStreetMap</span><span class="radio-desc">Mapa estándar</span></div>
+          </label>
+          <label class="radio-card" id="label-sat">
+            <input type="radio" name="basemap" value="satellite" />
+            <div><span class="radio-name">Esri Satellite</span><span class="radio-desc">Imagen satelital</span></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-header">📂 Módulos temáticos</div>
+        <p class="section-hint">Activa o desactiva capas en el mapa</p>
+        <div class="layer-list">
+          <label class="layer-card" id="card-riesgo"><input type="checkbox" id="layer-riesgo" /><div class="layer-color" style="background:#e74c3c"></div><div class="layer-info"><span class="layer-name">Riesgo natural</span><span class="layer-src">G1 · UNGRD, SGC, IDEAM</span></div><span class="layer-toggle">○</span></label>
+          <label class="layer-card" id="card-pot"><input type="checkbox" id="layer-pot" /><div class="layer-color" style="background:#f39c12"></div><div class="layer-info"><span class="layer-name">POT y ordenamiento</span><span class="layer-src">G2 · Alcaldía, IGAC</span></div><span class="layer-toggle">○</span></label>
+          <label class="layer-card" id="card-pomca"><input type="checkbox" id="layer-pomca" /><div class="layer-color" style="background:#27ae60"></div><div class="layer-info"><span class="layer-name">POMCA Catatumbo</span><span class="layer-src">G3 · CORPONOR</span></div><span class="layer-toggle">○</span></label>
+          <label class="layer-card" id="card-participacion"><input type="checkbox" id="layer-participacion" /><div class="layer-color" style="background:#8e44ad"></div><div class="layer-info"><span class="layer-name">Participación ciudadana</span><span class="layer-src">G3 · JAC, Personería</span></div><span class="layer-toggle">○</span></label>
+          <label class="layer-card" id="card-vial"><input type="checkbox" id="layer-vial" /><div class="layer-color" style="background:#2980b9"></div><div class="layer-info"><span class="layer-name">Accidentalidad vial</span><span class="layer-src">G4 · INVÍAS, Tránsito</span></div><span class="layer-toggle">○</span></label>
+          <label class="layer-card" id="card-educativo"><input type="checkbox" id="layer-educativo" /><div class="layer-color" style="background:#16a085"></div><div class="layer-info"><span class="layer-name">Módulo educativo</span><span class="layer-src">G4 · Glosario, fichas</span></div><span class="layer-toggle">○</span></label>
+        </div>
+      </div>
+
+      <div class="sidebar-section credits">
+        <p>UFPSO · Planificación Ambiental Regional · 2026</p>
+        <p>~30 estudiantes · 6 grupos especializados</p>
+      </div>
+    </aside>
+
+    <div class="map-container">
+      <div id="map"></div>
+      <div class="map-legend">
+        <div class="legend-title">Leyenda</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1a5c38"></div><span>Mapa base activo</span></div>
+        <div id="legend-dynamic"></div>
+      </div>
+      <div class="coords-bar">🌐 <span id="coords-text">Mueve el cursor sobre el mapa</span></div>
+    </div>
+
+    <aside class="infopanel">
+      <div class="infopanel-header">📍 Zona seleccionada</div>
+      <div id="info-content">
+        <div class="info-placeholder">
+          <div class="placeholder-icon">🗺️</div>
+          <p>Haz clic en el mapa o activa un módulo para ver información.</p>
+        </div>
+      </div>
+      <div class="infopanel-stats">
+        <div class="stat-card"><span class="stat-num" id="stat-layers">0</span><span class="stat-label">Capas activas</span></div>
+        <div class="stat-card"><span class="stat-num">6</span><span class="stat-label">Módulos totales</span></div>
+      </div>
+      <div class="quick-links">
+        <div class="ql-title">Acceso rápido</div>
+        <button class="ql-btn" onclick="map.setView([8.2344,-73.3541],13)">🏠 Centro de Ocaña</button>
+        <button class="ql-btn" onclick="map.setView([8.2344,-73.3541],11)">🔭 Vista regional</button>
+        <button class="ql-btn" id="btn-glosario">📚 Glosario ambiental</button>
+      </div>
+    </aside>
+  </div>
+
+  <button class="fab" id="fab-chat">💬</button>
+
+  <div class="chatbot" id="chatbot">
+    <div class="chat-topbar">
+      <div class="chat-avatar">IA</div>
+      <div class="chat-meta">
+        <span class="chat-name">Asistente GeoVisor</span>
+        <span class="chat-status">● En línea</span>
+      </div>
+      <button class="chat-close" id="chat-close">✕</button>
+    </div>
+    <div class="chat-body" id="chat-body">
+      <div class="chat-bubble bot">¡Hola! Soy el asistente virtual del <strong>GeoVisor Ocaña</strong>. ¿En qué te puedo ayudar?</div>
+      <div class="chat-suggestions">
+        <button class="suggestion" onclick="sendSuggestion(this)">¿Qué es el POMCA?</button>
+        <button class="suggestion" onclick="sendSuggestion(this)">¿Cómo hago un derecho de petición?</button>
+        <button class="suggestion" onclick="sendSuggestion(this)">¿Qué significa zona de riesgo alto?</button>
+      </div>
+    </div>
+    <div class="chat-footer">
+      <input type="text" id="chat-input" placeholder="Escribe tu pregunta..." />
+      <button id="chat-send">➤</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        📚 Glosario Ambiental — GeoVisor Ocaña
+        <button id="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="glosario-grid" id="glosario-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' });
+  var satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+  var map = L.map('map', { center: [8.2344, -73.3541], zoom: 13, layers: [osm] });
+
+  var iconCenter = L.divIcon({ className:'', html:'<div style="width:14px;height:14px;background:#1a5c38;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>', iconSize:[14,14], iconAnchor:[7,7] });
+  L.marker([8.2344,-73.3541], {icon:iconCenter}).addTo(map).bindPopup('<div class="popup-title">Ocaña, Norte de Santander</div>Municipio sede del GeoVisor · UFPSO 2026').openPopup();
+
+  var datosRiesgo = { type:'FeatureCollection', features:[
+    { type:'Feature', geometry:{type:'Point',coordinates:[-73.352,8.237]}, properties:{nombre:'Zona inundación — La Ermita',tipo:'Inundación',nivel:'Alto',fuente:'UNGRD'} },
+    { type:'Feature', geometry:{type:'Point',coordinates:[-73.361,8.229]}, properties:{nombre:'Deslizamiento — Vía aeropuerto',tipo:'Movimiento en masa',nivel:'Medio',fuente:'SGC'} },
+    { type:'Feature', geometry:{type:'Point',coordinates:[-73.345,8.241]}, properties:{nombre:'Amenaza sísmica — Zona norte',tipo:'Sismicidad',nivel:'Medio',fuente:'SGC'} }
+  ]};
+
+  var datosParticipacion = { type:'FeatureCollection', features:[
+    { type:'Feature', geometry:{type:'Point',coordinates:[-73.355,8.240]}, properties:{nombre:'JAC Barrio El Centro',presidente:'Por confirmar',telefono:'---'} },
+    { type:'Feature', geometry:{type:'Point',coordinates:[-73.348,8.228]}, properties:{nombre:'JAC Barrio La Primavera',presidente:'Por confirmar',telefono:'---'} },
+    { type:'Feature', geometry:{type:'Point',coordinates:[-73.358,8.245]}, properties:{nombre:'JAC Barrio Nuevo Horizonte',presidente:'Por confirmar',telefono:'---'} }
+  ]};
+
+  function mkRiesgo(f, latlng) {
+    var col = f.properties.nivel==='Alto'?'#e74c3c':'#f39c12';
+    var badge = f.properties.nivel==='Alto'?'badge-alto':'badge-medio';
+    var ico = L.divIcon({className:'', html:'<div style="width:16px;height:16px;background:'+col+';border:2.5px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.25)"></div>', iconSize:[16,16], iconAnchor:[8,8]});
+    return L.marker(latlng,{icon:ico}).bindPopup('<div class="popup-title">'+f.properties.nombre+'</div><span class="popup-badge '+badge+'">'+f.properties.nivel+'</span><br><b>Tipo:</b> '+f.properties.tipo+'<br><b>Fuente:</b> '+f.properties.fuente);
+  }
+
+  function mkJAC(f, latlng) {
+    var ico = L.divIcon({className:'', html:'<div style="width:14px;height:14px;background:#8e44ad;border:2.5px solid white;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,0.25)"></div>', iconSize:[14,14], iconAnchor:[7,7]});
+    return L.marker(latlng,{icon:ico}).bindPopup('<div class="popup-title">'+f.properties.nombre+'</div><span class="popup-badge badge-jac">JAC</span><br><b>Presidente:</b> '+f.properties.presidente+'<br><b>Tel:</b> '+f.properties.telefono);
+  }
+
+  var layerMap = {
+    'layer-riesgo': L.geoJSON(datosRiesgo, {pointToLayer:mkRiesgo}),
+    'layer-participacion': L.geoJSON(datosParticipacion, {pointToLayer:mkJAC})
+  };
+  var legendItems = {
+    'layer-riesgo': [{color:'#e74c3c',label:'Riesgo alto'},{color:'#f39c12',label:'Riesgo medio'}],
+    'layer-participacion': [{color:'#8e44ad',label:'JAC / Participación'}]
+  };
+  var activeLayers = 0;
+
+  document.querySelectorAll('.layer-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var cb = card.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+      var layer = layerMap[cb.id];
+      if (!layer) {
+        cb.checked = false;
+        document.getElementById('info-content').innerHTML = '<div style="padding:14px 16px"><div class="info-row"><span class="info-label">Estado</span><span class="info-value">⏳ Disponible cuando el grupo entregue sus datos GeoJSON.</span></div></div>';
+        return;
+      }
+      if (cb.checked) { layer.addTo(map); card.classList.add('on'); card.querySelector('.layer-toggle').textContent='●'; activeLayers++; }
+      else { map.removeLayer(layer); card.classList.remove('on'); card.querySelector('.layer-toggle').textContent='○'; activeLayers--; }
+      document.getElementById('stat-layers').textContent = activeLayers;
+      updateLegend();
+    });
+  });
+
+  function updateLegend() {
+    var d = document.getElementById('legend-dynamic'); d.innerHTML='';
+    document.querySelectorAll('.layer-card.on input').forEach(function(cb) {
+      var items = legendItems[cb.id];
+      if (items) items.forEach(function(item) { d.innerHTML+='<div class="legend-item"><div class="legend-dot" style="background:'+item.color+'"></div><span>'+item.label+'</span></div>'; });
+    });
+  }
+
+  document.querySelectorAll('input[name="basemap"]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      if (this.value==='satellite') { map.removeLayer(osm); satellite.addTo(map); document.getElementById('label-sat').classList.add('active'); document.getElementById('label-osm').classList.remove('active'); }
+      else { map.removeLayer(satellite); osm.addTo(map); document.getElementById('label-osm').classList.add('active'); document.getElementById('label-sat').classList.remove('active'); }
+    });
+  });
+
+  map.on('mousemove', function(e) { document.getElementById('coords-text').textContent='Lat: '+e.latlng.lat.toFixed(5)+'  |  Lon: '+e.latlng.lng.toFixed(5); });
+  map.on('click', function(e) {
+    document.getElementById('info-content').innerHTML='<div style="padding:14px 16px"><div class="info-row"><span class="info-label">Latitud</span><span class="info-value">'+e.latlng.lat.toFixed(6)+'</span></div><div class="info-row"><span class="info-label">Longitud</span><span class="info-value">'+e.latlng.lng.toFixed(6)+'</span></div><div class="info-row"><span class="info-label">Municipio</span><span class="info-value">Ocaña, N. de Santander</span></div></div>';
+  });
+
+  var chatbot = document.getElementById('chatbot');
+  document.getElementById('fab-chat').addEventListener('click', function() { chatbot.classList.toggle('open'); });
+  document.getElementById('chat-close').addEventListener('click', function() { chatbot.classList.remove('open'); });
+
+  var respuestas = {
+    pomca: 'El <b>POMCA</b> es el Plan de Ordenación y Manejo de Cuencas Hidrográficas. Para Ocaña aplica el del río Catatumbo, administrado por CORPONOR.',
+    riesgo: 'Las <b>zonas de riesgo alto</b> tienen alta probabilidad de ser afectadas por inundaciones, deslizamientos o sismos. Activa la capa "Riesgo natural" para verlas.',
+    peticion: 'Para un <b>derecho de petición</b>: redacta tu solicitud y preséntala ante la Alcaldía o CORPONOR. Tienen 15 días hábiles para responder (Ley 1755 de 2015).',
+    def: 'El chatbot completo con IA estará en la Fase 2 del proyecto. Por ahora explora las capas del mapa desde el panel izquierdo. 🗺️'
+  };
+
+  function enviarMensaje() {
+    var input = document.getElementById('chat-input');
+    var txt = input.value.trim(); if (!txt) return;
+    addBubble(txt,'user'); input.value='';
+    setTimeout(function() {
+      var lower = txt.toLowerCase(); var resp = respuestas.def;
+      if (lower.includes('pomca')||lower.includes('catatumbo')) resp=respuestas.pomca;
+      else if (lower.includes('riesgo')||lower.includes('inundac')||lower.includes('desliz')) resp=respuestas.riesgo;
+      else if (lower.includes('petici')||lower.includes('participac')) resp=respuestas.peticion;
+      addBubble(resp,'bot');
+    }, 600);
+  }
+
+  function addBubble(html,tipo) {
+    var body=document.getElementById('chat-body');
+    var div=document.createElement('div'); div.className='chat-bubble '+tipo; div.innerHTML=html;
+    body.appendChild(div); body.scrollTop=body.scrollHeight;
+  }
+
+  function sendSuggestion(btn) { document.getElementById('chat-input').value=btn.textContent; enviarMensaje(); }
+  document.getElementById('chat-send').addEventListener('click', enviarMensaje);
+  document.getElementById('chat-input').addEventListener('keypress', function(e) { if(e.key==='Enter') enviarMensaje(); });
+
+  var glosario = [
+    {term:'POMCA',def:'Plan de Ordenación y Manejo de Cuencas Hidrográficas. Regula el uso de recursos hídricos.'},
+    {term:'POT',def:'Plan de Ordenamiento Territorial. Define cómo se puede usar el suelo del municipio.'},
+    {term:'CORPONOR',def:'Corporación Autónoma Regional de la Frontera Nororiental. Autoridad ambiental de Norte de Santander.'},
+    {term:'JAC',def:'Junta de Acción Comunal. Organización comunitaria de participación ciudadana barrial o veredal.'},
+    {term:'GeoJSON',def:'Formato de datos geoespaciales usado para representar capas de información en mapas digitales.'},
+    {term:'Amenaza',def:'Fenómeno físico (inundación, sismo, deslizamiento) que puede causar daño a personas o bienes.'},
+    {term:'Vulnerabilidad',def:'Grado de exposición de una comunidad ante una amenaza natural o antrópica.'},
+    {term:'Cuenca hidrográfica',def:'Área de terreno que drena sus aguas hacia un río. La cuenca del Catatumbo incluye a Ocaña.'},
+    {term:'Suelo de expansión',def:'Área que el POT destina para el crecimiento futuro del perímetro urbano.'},
+    {term:'Leaflet.js',def:'Librería JavaScript de código abierto para crear mapas interactivos en páginas web.'}
+  ];
+  var grid=document.getElementById('glosario-grid');
+  glosario.forEach(function(item){ grid.innerHTML+='<div class="glosario-term"><div class="term-word">'+item.term+'</div><div class="term-def">'+item.def+'</div></div>'; });
+
+  var overlay=document.getElementById('modal-overlay');
+  document.getElementById('btn-glosario').addEventListener('click',function(){ overlay.classList.add('open'); });
+  document.getElementById('modal-close').addEventListener('click',function(){ overlay.classList.remove('open'); });
+  overlay.addEventListener('click',function(e){ if(e.target===overlay) overlay.classList.remove('open'); });
+</script>
+</body>
+</html>
