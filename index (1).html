@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoVisor Ocaña – UFPS</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=3" />
+</head>
+<body>
+
+  <!-- ===== TOPBAR ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <!-- Logo SVG de la UFPS (reconstruido con los colores oficiales) -->
+      <div class="brand-logo-ufps">
+        <svg viewBox="0 0 54 54" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
+          <!-- Fondo blanco -->
+          <rect width="54" height="54" rx="6" fill="#fff"/>
+          <!-- Cuadro rojo superior izquierdo: UF -->
+          <rect x="2" y="2" width="24" height="24" rx="3" fill="#C8102E"/>
+          <text x="14" y="19" text-anchor="middle" font-family="Arial" font-weight="700" font-size="13" fill="#fff">UF</text>
+          <!-- Cuadro rojo inferior izquierdo: PS -->
+          <rect x="2" y="28" width="24" height="24" rx="3" fill="#C8102E"/>
+          <text x="14" y="45" text-anchor="middle" font-family="Arial" font-weight="700" font-size="13" fill="#fff">PS</text>
+          <!-- Línea divisora vertical decorativa -->
+          <rect x="28" y="2" width="2" height="50" rx="1" fill="#C8102E" opacity="0.15"/>
+          <!-- Texto UFPS lateral pequeño -->
+          <text x="41" y="22" text-anchor="middle" font-family="Arial" font-weight="700" font-size="8" fill="#C8102E">UFPS</text>
+          <text x="41" y="34" text-anchor="middle" font-family="Arial" font-size="5.5" fill="#555">Ocaña</text>
+        </svg>
+      </div>
+
+      <div class="brand-text">
+        <h1>GeoVisor Ocaña</h1>
+        <p>Universidad Francisco de Paula Santander · Ing. Ambiental 2026</p>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <span class="topbar-badge">Beta pública</span>
+      <button class="nav-toggle" id="navToggle" type="button">☰</button>
+    </div>
+  </header>
+
+  <!-- ===== LAYOUT PRINCIPAL ===== -->
+  <main class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <div class="sidebar-header">
+          <h2 class="panel-title">Navegación</h2>
+          <p class="panel-subtitle">Explora las secciones temáticas</p>
+        </div>
+
+        <nav class="nav-menu">
+          <button class="nav-item active" data-view="inicio">
+            <span class="nav-icon">🏠</span> Inicio
+          </button>
+          <div class="nav-divider"></div>
+          <button class="nav-item" data-view="riesgo">
+            <span class="nav-icon">⚠️</span> Riesgo
+          </button>
+          <button class="nav-item" data-view="pot">
+            <span class="nav-icon">🗺️</span> POT
+          </button>
+          <button class="nav-item" data-view="pomca">
+            <span class="nav-icon">💧</span> POMCA
+          </button>
+          <button class="nav-item" data-view="participacion">
+            <span class="nav-icon">🤝</span> Participación
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-ufps-credit">
+            <svg viewBox="0 0 32 32" width="22" height="22">
+              <rect width="14" height="14" rx="2" fill="#C8102E"/>
+              <text x="7" y="10.5" text-anchor="middle" font-family="Arial" font-weight="700" font-size="7" fill="#fff">UF</text>
+              <rect y="16" width="14" height="14" rx="2" fill="#C8102E"/>
+              <text x="7" y="26.5" text-anchor="middle" font-family="Arial" font-weight="700" font-size="7" fill="#fff">PS</text>
+            </svg>
+            <span>UFPS Ocaña · 2026</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <section class="content">
+
+      <!-- ===== VISTA: INICIO ===== -->
+      <section class="view active" id="view-inicio">
+
+        <!-- Hero Banner estilo UFPS -->
+        <div class="hero-banner">
+          <div class="hero-banner-overlay"></div>
+          <div class="hero-banner-content">
+            <div class="hero-eyebrow">
+              <span>📍</span> Municipio de Ocaña · Norte de Santander
+            </div>
+            <h2>Bienvenido al<br><span class="hero-highlight">GeoVisor Ocaña</span></h2>
+            <p>Herramienta geoespacial interactiva de consulta libre para la comunidad de Ocaña. Explora información sobre riesgos naturales, ordenamiento territorial, cuencas hidrográficas y participación ciudadana.</p>
+            <div class="hero-actions">
+              <button class="btn-primary" onclick="document.querySelector('[data-view=riesgo]').click()">
+                🗺️ Ver mapa de riesgo
+              </button>
+              <button class="btn-outline" id="openChatbotBtnHero">
+                🤖 Consultar GeoBot
+              </button>
+            </div>
+          </div>
+          <!-- Stat strip dentro del hero -->
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <strong>3</strong><span>Tipos de riesgo</span>
+            </div>
+            <div class="hero-stat">
+              <strong>4</strong><span>Módulos</span>
+            </div>
+            <div class="hero-stat">
+              <strong>9</strong><span>Capas GIS</span>
+            </div>
+            <div class="hero-stat">
+              <strong>GeoBot</strong><span>IA integrada</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Módulos / Mini-cards -->
+        <div class="modules-section">
+          <div class="section-header">
+            <h3>Módulos disponibles</h3>
+            <p>Selecciona una sección para explorar la información geoespacial del municipio</p>
+          </div>
+          <div class="modules-grid">
+            <div class="mini-card mod-active" onclick="document.querySelector('[data-view=riesgo]').click()">
+              <div class="mini-card-icon">⚠️</div>
+              <h3>Riesgo</h3>
+              <p>Avenida torrencial, inundación y movimiento en masa con capas interactivas.</p>
+              <span class="mini-tag tag-active">✓ Activo</span>
+            </div>
+            <div class="mini-card" onclick="document.querySelector('[data-view=pot]').click()">
+              <div class="mini-card-icon">🗺️</div>
+              <h3>POT</h3>
+              <p>Glosario, leyes y contenido de ordenamiento territorial.</p>
+              <span class="mini-tag">En desarrollo</span>
+            </div>
+            <div class="mini-card" onclick="document.querySelector('[data-view=pomca]').click()">
+              <div class="mini-card-icon">💧</div>
+              <h3>POMCA</h3>
+              <p>Información ambiental y planificación de cuencas hidrográficas.</p>
+              <span class="mini-tag">En desarrollo</span>
+            </div>
+            <div class="mini-card" onclick="document.querySelector('[data-view=participacion]').click()">
+              <div class="mini-card-icon">🤝</div>
+              <h3>Participación</h3>
+              <p>Espacios comunitarios, material pedagógico y aportes ciudadanos.</p>
+              <span class="mini-tag">En desarrollo</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Franja informativa inferior -->
+        <div class="info-strip">
+          <div class="info-strip-card">
+            <div class="info-strip-icon" style="background:#fef1f3;">🎓</div>
+            <div>
+              <h4>Proyecto académico UFPS</h4>
+              <p>Desarrollado por estudiantes de Ingeniería Ambiental de la UFPS Ocaña como herramienta de consulta para la comunidad.</p>
+            </div>
+          </div>
+          <div class="info-strip-card">
+            <div class="info-strip-icon" style="background:#eef1f8;">⚖️</div>
+            <div>
+              <h4>Marco legal</h4>
+              <p>Basado en la Ley 1523 de 2012 y las directrices de CORPONOR para gestión del riesgo en Colombia.</p>
+            </div>
+          </div>
+          <div class="info-strip-card">
+            <div class="info-strip-icon" style="background:#eaf6ef;">🤖</div>
+            <div>
+              <h4>GeoBot integrado</h4>
+              <p>Asistente virtual con IA para consultar capas, conceptos del POT, POMCA y orientar a la ciudadanía.</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===== VISTA: RIESGO ===== -->
+      <section class="view" id="view-riesgo">
+        <div class="risk-layout">
+          <aside class="risk-sidebar">
+            <div class="risk-card">
+              <h3>Mapas base</h3>
+              <label class="control-item">
+                <input type="radio" name="baseLayer" value="osm" checked />
+                OpenStreetMap
+              </label>
+              <label class="control-item">
+                <input type="radio" name="baseLayer" value="satellite" />
+                Esri Satellite
+              </label>
+            </div>
+
+            <div class="risk-card">
+              <h3>Capas de riesgo</h3>
+
+              <details open>
+                <summary>Avenida torrencial</summary>
+                <label class="control-item">
+                  <input type="radio" name="riesgoLayer" value="amenaza_at" />
+                  Amenaza
+                </label>
+                <label class="control-item">
+                  <input type="radio" name="riesgoLayer" value="exposicion_at" />
+                  Exposición
+                </label>
+                <label class="control-item">
+                  <input type="radio" name="riesgoLayer" value="riesgo_at" />
+                  Riesgo
+                </label>
+              </details>
+
+              <details>
+                <summary>Inundación</summary>
+                <label class="control-item">
+                  <input type="radio" name="riesgoLayer" value="amenaza_inundacion" />
+                  Amenaza
+                </label>
+                <label class="control-item">
+                  <input type="radio" name="riesgoLayer" value="exposicion_inundacion" />
+                  Exposición
+                </label>
+                <label class="control-item">
+                  <input type="radio" name="riesgoLayer" value="riesgo_inundacion" />
+                  Riesgo
+                </label>
+              </details>
+
+              <details>
+                <summary>Movimiento en masa</summary>
+                <label class="control-item">
+                  <input type="radio" name="riesgoLayer" value="amenaza_mm" />
+                  Amenaza
+                </label>
+                <label class="control-item">
+                  <input type="radio" name="riesgoLayer" value="exposicion_mm" />
+                  Exposición
+                </label>
+                <label class="control-item">
+                  <input type="radio" name="riesgoLayer" value="riesgo_mm" />
+                  Riesgo
+                </label>
+              </details>
+
+              <button class="clear-btn" id="clearRiskLayer" type="button">
+                Quitar capa activa
+              </button>
+            </div>
+          </aside>
+
+          <div class="risk-map-panel">
+            <div id="map"></div>
+            <div class="legend-floating" id="legendBox">
+              <h4>Leyenda</h4>
+              <div id="legendContent">
+                <div class="legend-item">
+                  <span class="swatch" style="background:#C8102E;"></span>
+                  <span>Selecciona una capa de riesgo</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="risk-info">
+            <div class="info-card">
+              <h3>Información temática</h3>
+              <div id="riskInfoContent">
+                <p>Selecciona una capa para ver su significado, interpretación y referencia normativa.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: POT ===== -->
+      <section class="view" id="view-pot">
+        <div class="content-card">
+          <div class="content-card-header">
+            <span class="content-card-icon">🗺️</span>
+            <div>
+              <h2>Plan de Ordenamiento Territorial</h2>
+              <p class="content-card-sub">Información sobre el ordenamiento del municipio de Ocaña</p>
+            </div>
+          </div>
+          <p>En esta sección se mostrará el contenido relacionado con el Plan de Ordenamiento Territorial: glosario, objetivos, componentes, cartillas, normativa y material enviado por el equipo.</p>
+          <h3>Glosario base</h3>
+          <ul>
+            <li><strong>Ordenamiento territorial:</strong> proceso de organización del uso del suelo en el municipio.</li>
+            <li><strong>Clasificación del suelo:</strong> urbano, rural, de expansión urbana y suburbano.</li>
+            <li><strong>Uso del suelo:</strong> actividades permitidas según la zona.</li>
+            <li><strong>Tratamientos urbanísticos:</strong> normas para renovar, conservar o desarrollar zonas.</li>
+          </ul>
+          <h3>Normativa</h3>
+          <p>Aquí puedes incorporar la ley, decretos y acuerdos municipales que rijan el POT en Colombia y en Ocaña.</p>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: POMCA ===== -->
+      <section class="view" id="view-pomca">
+        <div class="content-card">
+          <div class="content-card-header">
+            <span class="content-card-icon">💧</span>
+            <div>
+              <h2>POMCA</h2>
+              <p class="content-card-sub">Plan de Ordenación y Manejo de Cuencas Hidrográficas</p>
+            </div>
+          </div>
+          <p>Esta sección funcionará como página informativa para integrar conceptos, glosario, normativas, documentos y aportes del equipo relacionados con el Plan de Ordenación y Manejo de Cuencas.</p>
+        </div>
+      </section>
+
+      <!-- ===== VISTA: PARTICIPACIÓN ===== -->
+      <section class="view" id="view-participacion">
+        <div class="content-card">
+          <div class="content-card-header">
+            <span class="content-card-icon">🤝</span>
+            <div>
+              <h2>Participación ciudadana</h2>
+              <p class="content-card-sub">Espacios comunitarios y material pedagógico</p>
+            </div>
+          </div>
+          <p>Aquí se podrá mostrar información sobre procesos participativos, espacios comunitarios, materiales pedagógicos, rutas de participación y resultados del trabajo con la comunidad.</p>
+        </div>
+      </section>
+
+      <!-- ===== CHATBOT ===== -->
+      <section class="chatbot-section">
+        <div class="chatbot-card">
+          <div class="chatbot-card-header">
+            <div class="chatbot-icon">🤖</div>
+            <div>
+              <h2>GeoBot · Asistente virtual</h2>
+              <p>Consulta el geovisor, capas de riesgo, conceptos del POT, POMCA y participación ciudadana.</p>
+            </div>
+          </div>
+
+          <button class="chatbot-btn" id="openChatbotBtn" type="button">
+            Abrir GeoBot
+          </button>
+
+          <div class="chat-window hidden" id="chatWindow">
+            <div class="chat-header">
+              <div class="chat-header-brand">
+                <div class="chat-bot-avatar">🤖</div>
+                <div>
+                  <h3>GeoBot</h3>
+                  <span class="chat-online">● En línea</span>
+                </div>
+              </div>
+              <button type="button" id="closeChatbotBtn" title="Cerrar">×</button>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+              <div class="bot-message">
+                Hola. Soy GeoBot, el asistente del GeoVisor Ocaña. ¿En qué puedo ayudarte?
+              </div>
+            </div>
+
+            <div class="chat-input-area">
+              <input type="text" id="chatInput" placeholder="Escribe tu pregunta..." />
+              <button type="button" id="sendChatBtn">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="main.js?v=2"></script>
+  <script src="chatbot.js?v=1"></script>
+
+  <!-- Conectar botón del hero al chatbot -->
+  <script>
+    document.getElementById('openChatbotBtnHero').addEventListener('click', function () {
+      document.getElementById('openChatbotBtn').click();
+      document.querySelector('[data-view="inicio"]') &&
+        document.getElementById('chatWindow').classList.remove('hidden');
+    });
+  </script>
+</body>
+</html>
